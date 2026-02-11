@@ -2,13 +2,14 @@ const SUPABASE_URL = "https://xbtfoundwmhrqrbcuqcw.supabase.co";
 const SUPABASE_KEY = "sb_publishable_LdAF-RydoXbsD2Ccscnsag_dQ-rolTO";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const TABLE = "nonprofits";
+// IMPORTANT: use the view that includes audience flags
+const TABLE = "nonprofits_with_audience";
 const PAGE_SIZE = 25;
 
 const stateSelect = document.getElementById("stateSelect");
 const qInput = document.getElementById("qInput");
 const serviceSelect = document.getElementById("serviceSelect");
-const audienceSelect = document.getElementById("audienceSelect"); // UI only (disabled in V1)
+const audienceSelect = document.getElementById("audienceSelect");
 const searchBtn = document.getElementById("searchBtn");
 const clearBtn = document.getElementById("clearBtn");
 const statusEl = document.getElementById("status");
@@ -122,7 +123,7 @@ function irsRecordUrl(ein){
 }
 
 function countKey(f){
-  return `${f.state}||${f.q.toLowerCase()}||${f.ntee}`;
+  return `${f.state}||${f.q.toLowerCase()}||${f.ntee}||${f.audience}`;
 }
 
 function setMeta(start, end){
@@ -152,7 +153,8 @@ function getFilters(){
   return {
     state: (stateSelect.value || "").trim().toUpperCase(),
     q: (qInput.value || "").trim(),
-    ntee: serviceSelect.disabled ? "" : (serviceSelect.value || "")
+    ntee: serviceSelect.disabled ? "" : (serviceSelect.value || ""),
+    audience: (audienceSelect?.value || "all")
   };
 }
 
@@ -170,12 +172,20 @@ function renderResults(rows){
     const ein = r.ein || "";
     const service = serviceLabelFromNtee(r.ntee_code);
 
+    // OPTIONAL: show small audience badges if your view returns them
+    const badges = [];
+    if (r.is_veteran_org) badges.push("Veteran");
+    if (r.is_first_responder_org) badges.push("First Responder");
+
     const div = document.createElement("div");
     div.className = "card";
     div.innerHTML = `
       <div class="name">${escapeHtml(name)}</div>
       <p class="sub">${escapeHtml([city, state].filter(Boolean).join(", ") || "—")}</p>
-      <div class="tagRow"><span class="tag">${escapeHtml(service)}</span></div>
+      <div class="tagRow">
+        <span class="tag">${escapeHtml(service)}</span>
+        ${badges.map(b => `<span class="tag">${escapeHtml(b)}</span>`).join("")}
+      </div>
 
       <div class="actionRow">
         <a class="btnContact"
@@ -214,16 +224,15 @@ async function fetchPage(reset=false){
   setStatus("Searching…");
   resultsEl.innerHTML = "";
 
-  // range: fetch PAGE_SIZE + 1 to know if there’s a next page
+  // fetch PAGE_SIZE + 1 to detect next page
   const from = offset;
   const to = offset + PAGE_SIZE;
 
-  // count only when filters change
   const needCount = (countKey(f) !== lastCountKey);
 
   let query = sb
     .from(TABLE)
-    .select("ein,name,city,state,ntee_code", { count: needCount ? "estimated" : null })
+    .select("ein,name,city,state,ntee_code,is_veteran_org,is_first_responder_org", { count: needCount ? "estimated" : null })
     .eq("state", f.state)
     .range(from, to);
 
@@ -236,6 +245,13 @@ async function fetchPage(reset=false){
   // optional service filter by NTEE prefix
   if (f.ntee){
     query = query.ilike("ntee_code", `${f.ntee}%`);
+  }
+
+  // ✅ optional audience filter (the missing piece)
+  if (f.audience === "veteran"){
+    query = query.eq("is_veteran_org", true);
+  } else if (f.audience === "first_responder"){
+    query = query.eq("is_first_responder_org", true);
   }
 
   const { data, error, count } = await query;
@@ -311,4 +327,10 @@ stateSelect.addEventListener("change", () => {
   metaEl.textContent = "";
   setStatus("Please select a state to search.");
   setPager();
+
+  // make sure audience is usable
+  if (audienceSelect) {
+    audienceSelect.disabled = false;
+    if (!audienceSelect.value) audienceSelect.value = "all";
+  }
 })();
