@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Outreach Project Directory</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+  <div class="wrap">
+
+    <!-- V1 LOGO (no box) -->
+    <header class="hero">
+      <img class="hero-logo" src="./logo.png" alt="The Outreach Project" />
+    </header>
+
+    <!-- Background starts below logo -->
+    <main class="stage">
+      <section class="panel">
+        <h1>Nonprofit Directory</h1>
+        <p class="subtitle">Find support near you.</p>
+
+        <div class="filters">
+          <div class="field">
+            <label class="label">State <span class="req">*</span></label>
+            <select id="stateSelect">
+              <option value="">Select a state…</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="label">City or Organization</label>
+            <input id="qInput" placeholder="e.g., Las Vegas or Freedom Alliance" autocomplete="off" />
+          </div>
+
+          <div class="field">
+            <label class="label">Service Area</label>
+            <select id="serviceSelect" disabled>
+              <option value="">Select a state first…</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="label">Audience</label>
+            <select id="audienceSelect" disabled>
+              <option value="all">All nonprofits</option>
+              <option value="veterans">Veteran-serving</option>
+              <option value="first_responders">First responder-serving</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btnRow">
+          <button id="searchBtn" class="btn btn-primary" type="button">Search</button>
+          <button id="clearBtn" class="btn btn-ghost" type="button">Clear</button>
+        </div>
+
+        <div class="statusStrip" id="status">Please select a state to search.</div>
+
+        <div class="metaRow">
+          <div id="meta" class="meta"></div>
+
+          <div class="pager">
+            <button id="prevBtn" class="btn btn-ghost btn-sm" type="button" disabled>Prev</button>
+            <div id="pageLabel" class="pageLabel">Page 1</div>
+            <button id="nextBtn" class="btn btn-ghost btn-sm" type="button" disabled>Next</button>
+          </div>
+        </div>
+
+        <div id="results" class="results"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
